@@ -1,0 +1,134 @@
+--COMBINE THE SCATTERED DATA FROM DIFFRENT TABLE
+
+CREATE TABLE appleStore_combined AS
+
+SELECT* from appleStore_description1
+union ALL
+SELECT* from appleStore_description2
+union ALL
+SELECT* from appleStore_description3
+union ALL
+SELECT* from appleStore_description4
+
+
+** EXPLORATORY DATA ANALYSIS**
+
+--CHECK THE NUMBER OF UNIQUE APPS IN BOTH TABLE 
+
+SELECT COUNT(DISTINCT id) AS UNIQUEAPPIDs
+FROM AppleStore
+
+--CHECK FOR THE MISSING VALUES IN KEY FEILDS 
+
+SELECT COUNT(*) AS MISSING_VALUES
+FROM AppleStore
+WHERE track_name IS NULL OR user_rating IS NULL OR prime_genre IS NULL
+
+SELECT COUNT(*) AS MISSING_VALUES
+FROM appleStore_combined
+WHERE app_desc IS NULL
+
+--FIND OUT THE NUMBER OF APPS PER GENRE 
+
+SELECT prime_genre, COUNT(*) AS NUM_OF_APPS
+FROM AppleStore
+GROUP BY prime_genre
+ORDER BY NUM_OF_APPS DESC
+
+-- GET THE OVERVIEW OF APP RATINGSAppleStore
+
+SELECT  min(user_rating) AS MIN_RATING,
+		max(user_rating) AS MAX_RATING,
+		avg(user_rating) AS AVG_RATING
+FROM AppleStore
+
+**DATA ANALYSIS**
+
+--DETERMINE WHETHER PAID APPS HAVE HIGHER RATING THAN THE FREE APPS 
+SELECT 
+    CASE
+        WHEN price > 0 THEN 'PAID'
+        ELSE 'FREE'
+    END AS APP_TYPE,
+    AVG(user_rating) AS AVG_RATING,
+    COUNT(*) AS NUM_OF_APPS
+FROM AppleStore
+GROUP BY APP_TYPE;
+
+-- CHECK IF APPS THAT SUPPORT DIFFRENT LANGUAGES HAVE HIGHER RATING AppleStore
+
+SELECT CASE 
+	WHEN lang_num<10 THEN 'LESS THAN TEN LANGUAGES'
+    WHEN lang_num<5 THEN 'LESS THAN FIVE LANGUAGES'
+    WHEN lang_num BETWEEN 10 AND 30 THEN 'BETWEEN 10 AND 30 LANGUAGES'
+    ELSE 'GREATER THAN 30 LANGUAGES'
+   END AS LANGUAGE_BUCKET,
+	ROUND(AVG(user_rating),1) AS AVG_RATING,
+   COUNT(*) AS NUM_OF_APPS
+   
+FROM AppleStore
+GROUP BY LANGUAGE_BUCKET
+ORDER BY AVG_RATING DESC
+
+-- GENRE WITH LOW RATINGS 
+
+SELECT prime_genre,
+	ROUND(AVG(user_rating),1) AS AVG_RATING,
+    COUNT(*) AS NUM_OF_APPS
+FROM AppleStore
+GROUP BY prime_genre
+ORDER BY AVG_RATING ASC
+LIMIT  10
+
+--CORRELATION BETWEEN APP DESCRIPTION LENGHT AND USER RATING  
+
+SELECT
+    CASE
+        WHEN LENGTH(B.app_desc) < 500 THEN 'SHORT'
+        WHEN LENGTH(B.app_desc) BETWEEN 500 AND 1000 THEN 'MEDIUM'
+        ELSE 'LONG'
+    END AS DESCRIPTION_LEN,
+    ROUND(AVG(A.user_rating), 1) AS AVG_RATING,
+    COUNT(*) AS NUM_OF_APPS
+FROM
+    AppleStore AS A
+JOIN
+    appleStore_combined AS B
+ON
+    A.id = B.id
+GROUP BY DESCRIPTION_LEN
+ORDER BY AVG_RATING DESC;
+
+
+
+-- CHECK FOR TOP RATED APPS ACCORDING TO THEIR CATAGORY
+SELECT prime_genre,
+       track_name,
+       user_rating
+FROM (
+    SELECT prime_genre,
+           track_name,
+           user_rating,
+           RANK() OVER (PARTITION BY prime_genre ORDER BY user_rating DESC, rating_count_tot DESC) AS rank
+    FROM appleStore
+) AS a
+WHERE a.rank = 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
